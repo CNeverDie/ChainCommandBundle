@@ -4,10 +4,26 @@ services:
 
     chain_command_bundle.manager:
         class: Borovets\ChainCommandBundle\Service\ChainManager
-        arguments: ['@chain_command_bundle.chain']
+        arguments: ['@chain_command_bundle.chain', '@chain_command_bundle.logger']
 
     chain_command_bundle.subscriber.command:
         class: Borovets\ChainCommandBundle\EventListener\CommandSubscriber
         arguments: ['@chain_command_bundle.manager']
         tags:
             - { name: kernel.event_subscriber }
+
+    chain_command_bundle.logger:
+        class: Symfony\Bridge\Monolog\Logger
+        arguments: ['command_chaind']
+        calls:
+            - ['pushHandler', ['@chain_command_bundle.logger.handler']]
+
+    chain_command_bundle.logger.handler:
+        class:  Monolog\Handler\StreamHandler
+        arguments: ['%kernel.logs_dir%/%kernel.environment%.log']
+        calls:
+            - ['setFormatter', ['@chain_command_bundle.logger.formatter']]
+
+    chain_command_bundle.logger.formatter:
+        class: Monolog\Formatter\LineFormatter
+        arguments: ["[%%datetime%%] %%message%%\n"]
