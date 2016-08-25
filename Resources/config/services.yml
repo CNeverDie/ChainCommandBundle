@@ -1,0 +1,13 @@
+services:
+    chain_command_bundle.chain:
+        class: Borovets\ChainCommandBundle\Service\ChainCollection
+
+    chain_command_bundle.manager:
+        class: Borovets\ChainCommandBundle\Service\ChainManager
+        arguments: ['@chain_command_bundle.chain']
+
+    chain_command_bundle.subscriber.command:
+        class: Borovets\ChainCommandBundle\EventListener\CommandSubscriber
+        arguments: ['@chain_command_bundle.manager']
+        tags:
+            - { name: kernel.event_subscriber }
