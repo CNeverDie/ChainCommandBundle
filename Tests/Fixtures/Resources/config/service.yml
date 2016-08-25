@@ -1,0 +1,4 @@
+barbundle.command.hi:
+        class: Borovets\ChainCommandBundle\Tests\Fixtures\Commands\HiCommand
+        tags:
+            - {name: 'chain.command', master_command: 'foo:hello', priority: 0}
