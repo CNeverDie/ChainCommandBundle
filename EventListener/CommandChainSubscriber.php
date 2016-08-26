@@ -2,7 +2,6 @@
 
 namespace Borovets\ChainCommandBundle\EventListener;
 
-
 use Borovets\ChainCommandBundle\Component\Console\ReadableBufferedOutput;
 use Borovets\ChainCommandBundle\Event\ChainCommandEvent;
 use Borovets\ChainCommandBundle\Event\ChainEvents;
@@ -10,6 +9,12 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
+/**
+ * Class CommandChainSubscriber
+ * @package Borovets\ChainCommandBundle\EventListener
+ *
+ * Listen command chain event, and log it
+ */
 class CommandChainSubscriber implements EventSubscriberInterface
 {
     /** @var LoggerInterface */

@@ -2,7 +2,6 @@
 
 namespace Borovets\ChainCommandBundle\EventListener;
 
-
 use Borovets\ChainCommandBundle\Service\ChainManager;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
@@ -25,12 +24,14 @@ class CommandSubscriber implements EventSubscriberInterface
     {
         return [
             ConsoleEvents::COMMAND => 'onConsoleCommand',
-//            ConsoleEvents::TERMINATE => 'onConsoleTerminate',
         ];
     }
 
     /**
+     * Subscribe on all console command.
      *
+     * If the command is run, which is the main in the chain, control is passed ChainManager
+     * If the command is run member the chain, command execution will be stopped
      *
      * @param ConsoleCommandEvent $event
      */
