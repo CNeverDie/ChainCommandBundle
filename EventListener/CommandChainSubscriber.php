@@ -3,6 +3,7 @@
 namespace Borovets\ChainCommandBundle\EventListener;
 
 
+use Borovets\ChainCommandBundle\Component\Console\ReadableBufferedOutput;
 use Borovets\ChainCommandBundle\Event\ChainCommandEvent;
 use Borovets\ChainCommandBundle\Event\ChainEvents;
 use Psr\Log\LoggerInterface;
@@ -90,9 +91,9 @@ class CommandChainSubscriber implements EventSubscriberInterface
      */
     public function onAfterMainCommand(ChainCommandEvent $event)
     {
-        /** @var BufferedOutput $bufferOutput */
+        /** @var ReadableBufferedOutput $bufferOutput */
         $bufferOutput = $event->getOutput();
-        $this->logger->info($bufferOutput->fetch());
+        $this->logger->info($bufferOutput->get());
     }
 
     /**
@@ -130,10 +131,10 @@ class CommandChainSubscriber implements EventSubscriberInterface
      */
     public function onAfterSubCommand(ChainCommandEvent $event)
     {
-        /** @var BufferedOutput $bufferOutput */
+        /** @var ReadableBufferedOutput $bufferOutput */
         $bufferOutput = $event->getOutput();
 
-        $this->logger->info($bufferOutput->fetch());
+        $this->logger->info($bufferOutput->get());
     }
 
     /**

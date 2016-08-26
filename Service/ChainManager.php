@@ -2,6 +2,7 @@
 
 namespace Borovets\ChainCommandBundle\Service;
 
+use Borovets\ChainCommandBundle\Component\Console\ReadableBufferedOutput;
 use Borovets\ChainCommandBundle\Event\ChainCommandEvent;
 use Borovets\ChainCommandBundle\Event\ChainEvents;
 use Symfony\Component\Console\Command\Command;
@@ -96,14 +97,10 @@ class ChainManager
         $event = new ChainCommandEvent($command, $command, $input, $output);
         $this->eventDispatcher->dispatch(ChainEvents::BEFORE_MAIN_COMMAND, $event);
 
-        $bufferOutput = new BufferedOutput();
-        $command->run($input, $bufferOutput);
+        $buffer = new ReadableBufferedOutput();
+        $command->run($input, $buffer);
 
-        $message = $bufferOutput->fetch();
-        $output->write($message);
-
-        $buffer = new BufferedOutput();
-        $buffer->write($message);
+        $output->write($buffer->get());
 
         $event = new ChainCommandEvent($command, $command, $input, $buffer);
         $this->eventDispatcher->dispatch(ChainEvents::AFTER_MAIN_COMMAND, $event);
@@ -128,15 +125,11 @@ class ChainManager
             $event = new ChainCommandEvent($mainCommand, $chainCommand, $input, $output);
             $this->eventDispatcher->dispatch(ChainEvents::BEFORE_SUB_COMMAND, $event);
 
-            $bufferOutput = new BufferedOutput();
-            $chainCommand->run(new ArrayInput([]), $bufferOutput);
+            $buffer = new ReadableBufferedOutput();
+            $chainCommand->run(new ArrayInput([]), $buffer);
 
-            $message = $bufferOutput->fetch();
-            $output->write($message);
+            $output->write($buffer->get());
 
-
-            $buffer = new BufferedOutput();
-            $buffer->write($message);
             $event = new ChainCommandEvent($mainCommand, $chainCommand, $input, $buffer);
             $this->eventDispatcher->dispatch(ChainEvents::AFTER_SUB_COMMAND, $event);
         }
