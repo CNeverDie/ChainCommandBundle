@@ -1,14 +1,23 @@
+parameters:
+    chain_command_bundle.log_file: "chains.log"
+
 services:
     chain_command_bundle.chain:
         class: Borovets\ChainCommandBundle\Service\ChainCollection
 
     chain_command_bundle.manager:
         class: Borovets\ChainCommandBundle\Service\ChainManager
-        arguments: ['@chain_command_bundle.chain', '@chain_command_bundle.logger']
+        arguments: ['@chain_command_bundle.chain', '@event_dispatcher']
 
     chain_command_bundle.subscriber.command:
         class: Borovets\ChainCommandBundle\EventListener\CommandSubscriber
         arguments: ['@chain_command_bundle.manager']
+        tags:
+            - { name: kernel.event_subscriber }
+
+    chain_command_bundle.subscriber.command_chain:
+        class: Borovets\ChainCommandBundle\EventListener\CommandChainSubscriber
+        arguments: ['@chain_command_bundle.logger']
         tags:
             - { name: kernel.event_subscriber }
 
@@ -20,7 +29,8 @@ services:
 
     chain_command_bundle.logger.handler:
         class:  Monolog\Handler\StreamHandler
-        arguments: ['%kernel.logs_dir%/%kernel.environment%.log']
+        arguments:
+            - '%kernel.logs_dir%/%chain_command_bundle.log_file%'
         calls:
             - ['setFormatter', ['@chain_command_bundle.logger.formatter']]
 

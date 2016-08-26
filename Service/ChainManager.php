@@ -2,28 +2,32 @@
 
 namespace Borovets\ChainCommandBundle\Service;
 
-use Psr\Log\LoggerInterface;
+use Borovets\ChainCommandBundle\Event\ChainCommandEvent;
+use Borovets\ChainCommandBundle\Event\ChainEvents;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class ChainManager
 {
     /** @var ChainCollection */
     private $chainCollection;
-    private $logger;
+
+    /** @var EventDispatcherInterface */
+    private $eventDispatcher;
 
     /**
      * ChainManager constructor.
      * @param ChainCollection $chainCollection
-     * @param LoggerInterface $logger
+     * @param EventDispatcherInterface $eventDispatcher
      */
-    public function __construct(ChainCollection $chainCollection, LoggerInterface $logger)
+    public function __construct(ChainCollection $chainCollection, EventDispatcherInterface $eventDispatcher)
     {
         $this->chainCollection = $chainCollection;
-        $this->logger = $logger;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -43,29 +47,41 @@ class ChainManager
      */
     public function runChain(Command $command, $input, $output)
     {
-        $this->logger->info(
-            sprintf('%s is a master command of a command chain that has registered member commands',
-                $command->getName()
-            )
-        );
+        $event = new ChainCommandEvent($command, null, $input, $output);
+        $this->eventDispatcher->dispatch(ChainEvents::CHAIN_INIT, $event);
 
-        $chainMembers = $this->getChainedCommands($command->getName());
+        $chainMembers = $this->getChainedCommands($command, $input, $output);
 
         $this->runMainCommand($command, $input, $output);
 
-        $this->logger->info(
-            sprintf('Executing %s command chain members:',
-                $command->getName()
-            )
-        );
+        $event = new ChainCommandEvent($command, null, $input, $output);
+        $this->eventDispatcher->dispatch(ChainEvents::BEFORE_CHAIN_STARTED, $event);
 
-        $this->runChainCommands($chainMembers, $output);
+        $this->runChainCommands($command, $chainMembers, $input, $output);
 
-        $this->logger->info(
-            sprintf('Execution of %s chain completed.',
-                $command->getName()
-            )
-        );
+        $event = new ChainCommandEvent($command, null, $input, $output);
+        $this->eventDispatcher->dispatch(ChainEvents::CHAIN_FINISHED, $event);
+    }
+
+    /**
+     * Get chained command by main command name
+     *
+     * @param string|Command $mainCommand
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return array
+     */
+    private function getChainedCommands(Command $mainCommand, $input, $output)
+    {
+        $chainMembers = $this->chainCollection->getChainSubCommands($mainCommand->getName());
+
+        foreach ($chainMembers as $chainMember) {
+
+            $event = new ChainCommandEvent($mainCommand, $chainMember['command'], $input, $output);
+            $this->eventDispatcher->dispatch(ChainEvents::CHAIN_COMMAND_REGISTERED, $event);
+        }
+
+        return $chainMembers;
     }
 
     /**
@@ -77,63 +93,52 @@ class ChainManager
      */
     private function runMainCommand(Command $command, $input, $output)
     {
-        $this->logger->info(
-            sprintf('Executing %s command itself first:',
-                $command->getName()
-            )
-        );
+        $event = new ChainCommandEvent($command, $command, $input, $output);
+        $this->eventDispatcher->dispatch(ChainEvents::BEFORE_MAIN_COMMAND, $event);
+
+        $bufferOutput = new BufferedOutput();
+        $command->run($input, $bufferOutput);
+
+        $message = $bufferOutput->fetch();
+        $output->write($message);
 
         $buffer = new BufferedOutput();
-        $command->run($input, $buffer);
+        $buffer->write($message);
 
-        $outputMessage = $buffer->fetch();
-
-        $this->logger->info($outputMessage);
-        $output->writeln($outputMessage);
+        $event = new ChainCommandEvent($command, $command, $input, $buffer);
+        $this->eventDispatcher->dispatch(ChainEvents::AFTER_MAIN_COMMAND, $event);
     }
 
-
     /**
-     * @param $chainCommands
+     * Run chain members
+     *
+     * @param Command $mainCommand
+     * @param array $chainCommands
+     * @param InputInterface $input
      * @param OutputInterface $output
      *
      * @TODO: Input params for chained command as service tags
      */
-    private function runChainCommands($chainCommands, $output)
+    private function runChainCommands(Command $mainCommand, array $chainCommands, $input, $output)
     {
         foreach ($chainCommands as $chainItem) {
             /** @var Command $chainCommand */
             $chainCommand = $chainItem['command'];
 
+            $event = new ChainCommandEvent($mainCommand, $chainCommand, $input, $output);
+            $this->eventDispatcher->dispatch(ChainEvents::BEFORE_SUB_COMMAND, $event);
+
+            $bufferOutput = new BufferedOutput();
+            $chainCommand->run(new ArrayInput([]), $bufferOutput);
+
+            $message = $bufferOutput->fetch();
+            $output->write($message);
+
+
             $buffer = new BufferedOutput();
-            $chainCommand->run(new ArrayInput([]), $buffer);
-
-            $outputMessage = $buffer->fetch();
-
-            $this->logger->info($outputMessage);
-            $output->writeln($outputMessage);
+            $buffer->write($message);
+            $event = new ChainCommandEvent($mainCommand, $chainCommand, $input, $buffer);
+            $this->eventDispatcher->dispatch(ChainEvents::AFTER_SUB_COMMAND, $event);
         }
-    }
-
-    /**
-     * Get chained command by main command name
-     *
-     * @param string $mainCommand
-     * @return array
-     */
-    private function getChainedCommands($mainCommand)
-    {
-        $chainMembers = $this->chainCollection->getChainSubCommands($mainCommand);
-
-        foreach ($chainMembers as $chainMember) {
-            $this->logger->info(
-                sprintf('%s registered as a member of %s command chain',
-                    $chainMember['commandName'],
-                    $mainCommand
-                )
-            );
-        }
-
-        return $chainMembers;
     }
 }
