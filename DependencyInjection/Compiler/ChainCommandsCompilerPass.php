@@ -18,6 +18,14 @@ class ChainCommandsCompilerPass implements CompilerPassInterface
 
         foreach ($taggedServices as $serviceId => $tags) {
             foreach ($tags as $attr) {
+                if (!isset($attr['master_command'])) {
+                    throw new \InvalidArgumentException('You must specify a master command');
+                }
+
+                if (!isset($attr['priority'])) {
+                    throw new \InvalidArgumentException('You must specify a priority for chain command');
+                }
+
                 $commandChain->addMethodCall('addCommand', [
                     $attr['master_command'], $attr['priority'], new Reference($serviceId)
                 ]);
