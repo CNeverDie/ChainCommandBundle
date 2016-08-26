@@ -32,6 +32,10 @@ class ChainCollection
      */
     public function hasChain($commandName)
     {
+        if (!is_string($commandName) || empty($commandName)) {
+            throw new \InvalidArgumentException('Invalid argument');
+        }
+
         if (array_key_exists($commandName, $this->chains)) {
             return true;
         }
@@ -47,6 +51,10 @@ class ChainCollection
      */
     public function isChainedCommand($commandName)
     {
+        if (!is_string($commandName) || empty($commandName)) {
+            throw new \InvalidArgumentException('Invalid argument');
+        }
+
         foreach ($this->chains as $chain) {
             foreach ($chain as $chainItem) {
                 if ($chainItem['commandName'] === $commandName) {
@@ -66,6 +74,10 @@ class ChainCollection
      */
     public function getMainChainName($commandName)
     {
+        if (!is_string($commandName) || empty($commandName)) {
+            throw new \InvalidArgumentException('Invalid argument');
+        }
+
         foreach ($this->chains as $key => $chain) {
             foreach ($chain as $chainItem) {
                 if ($commandName === $chainItem['commandName']) {
@@ -85,6 +97,10 @@ class ChainCollection
      */
     public function getChainSubCommands($chainName)
     {
+        if (!is_string($chainName) || empty($chainName)) {
+            throw new \InvalidArgumentException('Invalid argument');
+        }
+
         $chain = $this->chains[$chainName];
         uasort($chain, [$this, 'sortChainByPriority']);
 
